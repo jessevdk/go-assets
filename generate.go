@@ -34,64 +34,51 @@ type Generator struct {
 	fsFilesMap map[string]os.FileInfo
 }
 
-// Add a file or directory asset to the generator. Added directories will be
-// recursed automatically.
-func (x *Generator) Add(parent string, info os.FileInfo) error {
+func (x *Generator) addPath(parent string, info os.FileInfo) error {
 	p := path.Join(parent, info.Name())
 
-	if info.IsDir() {
-		return x.AddDir(path.Join(parent, info.Name()))
-	} else {
-		x.fsDirsMap[parent] = append(x.fsDirsMap[parent], info.Name())
-
-		if x.fsFilesMap == nil {
-			x.fsFilesMap = make(map[string]os.FileInfo)
-		}
-
-		x.fsFilesMap[p] = info
-	}
-
-	return nil
-}
-
-// Add a directory by path.
-func (x *Generator) AddDir(dir string) error {
-	fd, err := os.Open(dir)
-
-	if err != nil {
-		return err
+	if x.fsFilesMap == nil {
+		x.fsFilesMap = make(map[string]os.FileInfo)
 	}
 
 	if x.fsDirsMap == nil {
 		x.fsDirsMap = make(map[string][]string)
 	}
 
-	fi, err := fd.Readdir(-1)
+	x.fsFilesMap[p] = info
 
-	if err != nil {
-		return err
-	}
+	if info.IsDir() {
+		f, err := os.Open(p)
+		fi, err := f.Readdir(-1)
 
-	s, err := fd.Stat()
-
-	if err != nil {
-		return err
-	}
-
-	if x.fsFilesMap == nil {
-		x.fsFilesMap = make(map[string]os.FileInfo)
-	}
-
-	x.fsFilesMap[dir] = s
-	x.fsDirsMap[dir] = make([]string, 0, len(fi))
-
-	for _, f := range fi {
-		if err := x.Add(dir, f); err != nil {
+		if err != nil {
 			return err
 		}
+
+		x.fsDirsMap[p] = make([]string, 0, len(fi))
+
+		for _, f := range fi {
+			if err := x.addPath(p, f); err != nil {
+				return err
+			}
+		}
+	} else {
+		x.fsDirsMap[parent] = append(x.fsDirsMap[parent], info.Name())
 	}
 
 	return nil
+}
+
+// Add a file or directory asset to the generator. Added directories will be
+// recursed automatically.
+func (x *Generator) Add(p string) error {
+	info, err := os.Stat(p)
+
+	if err != nil {
+		return err
+	}
+
+	return x.addPath(path.Dir(p), info)
 }
 
 // Write the asset tree specified in the generator to the given writer. The

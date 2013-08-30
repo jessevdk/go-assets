@@ -15,4 +15,8 @@ type [FileSystem](http://godoc.org/github.com/jessevdk/go-assets#FileSystem) and
 implements the os.FileInfo and http.FileSystem interfaces so that they can be
 directly used with http.FileHandler.
 
+See also [go-assets-builder](https://github.com/jessevdk/go-assets-builder) for
+a simple builder program using go-assets and exposing the generator as a command
+line application.
+
 See <http://godoc.org/github.com/jessevdk/go-assets> for more information.

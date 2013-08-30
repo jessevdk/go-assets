@@ -72,6 +72,8 @@ func (x *Generator) addPath(parent string, info os.FileInfo) error {
 // Add a file or directory asset to the generator. Added directories will be
 // recursed automatically.
 func (x *Generator) Add(p string) error {
+	p = path.Clean(p)
+
 	info, err := os.Stat(p)
 
 	if err != nil {

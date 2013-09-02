@@ -16,7 +16,6 @@ type FileSystem struct {
 
 	// A map of file/directory paths to assets.File types.
 	Files map[string]*File
-
 }
 
 func (f *FileSystem) NewFile(path string, filemode os.FileMode, mtime time.Time, data []byte) *File {

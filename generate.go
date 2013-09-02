@@ -152,6 +152,18 @@ func (x *Generator) Add(p string) error {
 	return x.addPath(path.Dir(p), prefix, info)
 }
 
+func (x *Generator) stripPrefix(p string) (string, bool) {
+	if len(x.StripPrefix) == 0 {
+		return p, true
+	}
+
+	if strings.HasPrefix(p, x.StripPrefix) {
+		return p[len(x.StripPrefix):], true
+	} else {
+		return p, false
+	}
+}
+
 // Write the asset tree specified in the generator to the given writer. The
 // written asset tree is a valid, standalone go file with the assets
 // embedded into it.
@@ -231,23 +243,13 @@ func (x *Generator) Write(wr io.Writer) error {
 	dirmap := make(map[string][]string)
 
 	for k, v := range x.fsDirsMap {
-		vv := make([]string, len(v))
-
-		for i, vi := range v {
-			vv[i] = strings.TrimPrefix(vi, x.StripPrefix)
-
-			if len(vv[i]) == 0 {
-				vv[i] = "/"
+		if kk, ok := x.stripPrefix(k); ok {
+			if len(kk) == 0 {
+				kk = "/"
 			}
+
+			dirmap[kk] = v
 		}
-
-		kk := strings.TrimPrefix(k, x.StripPrefix)
-
-		if len(kk) == 0 {
-			kk = "/"
-		}
-
-		dirmap[kk] = vv
 	}
 
 	fmt.Fprintf(writer, "\t%s.Dirs = %#v\n", variableName, dirmap)
@@ -255,7 +257,11 @@ func (x *Generator) Write(wr io.Writer) error {
 
 	// Write files
 	for k, v := range x.fsFilesMap {
-		kk := strings.TrimPrefix(k, x.StripPrefix)
+		kk, ok := x.stripPrefix(k)
+
+		if !ok {
+			continue
+		}
 
 		if len(kk) == 0 {
 			kk = "/"

@@ -21,8 +21,9 @@ type File struct {
 	// The asset data. Note that this data might be in gzip compressed form.
 	Data []byte
 
-	fs  *FileSystem
-	buf *bytes.Reader
+	fs       *FileSystem
+	buf      *bytes.Reader
+	dirIndex int
 }
 
 // Implementation of os.FileInfo
@@ -55,6 +56,8 @@ func (f *File) Sys() interface{} {
 
 func (f *File) Close() error {
 	f.buf = nil
+	f.dirIndex = 0
+
 	return nil
 }
 
@@ -64,7 +67,10 @@ func (f *File) Stat() (os.FileInfo, error) {
 
 func (f *File) Readdir(count int) ([]os.FileInfo, error) {
 	if f.IsDir() {
-		return f.fs.readDir(f.Path)
+		ret, err := f.fs.readDir(f.Path, f.dirIndex, count)
+		f.dirIndex += len(ret)
+
+		return ret, err
 	} else {
 		return nil, os.ErrInvalid
 	}

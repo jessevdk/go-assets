@@ -37,12 +37,18 @@ func (f *FileSystem) Open(path string) (http.File, error) {
 	return nil, os.ErrNotExist
 }
 
-func (f *FileSystem) readDir(path string) ([]os.FileInfo, error) {
-	if d, ok := f.Dirs[path]; ok {
-		ret := make([]os.FileInfo, len(d))
+func (f *FileSystem) readDir(p string, index int, count int) ([]os.FileInfo, error) {
+	if d, ok := f.Dirs[p]; ok {
+		maxl := index + count
 
-		for i, v := range d {
-			ret[i] = f.Files[v]
+		if maxl > len(d) {
+			maxl = len(d)
+		}
+
+		ret := make([]os.FileInfo, 0, maxl-index)
+
+		for i := index; i < maxl; i++ {
+			ret = append(ret, f.Files[path.Join(p, d[i])])
 		}
 
 		return ret, nil

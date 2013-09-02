@@ -12,6 +12,11 @@ import (
 	"strings"
 )
 
+type file struct {
+	info os.FileInfo
+	path string
+}
+
 // An asset generator. The generator can be used to generate an asset go file
 // with all the assets that were added to the generator embedded into it.
 // The generated assets are made available by the specified go variable
@@ -27,24 +32,21 @@ type Generator struct {
 	StripPrefix string
 
 	fsDirsMap  map[string][]string
-	fsFilesMap map[string]os.FileInfo
+	fsFilesMap map[string]file
 }
 
-func (x *Generator) addPath(parent string, info os.FileInfo) error {
+func (x *Generator) addPath(parent string, prefix string, info os.FileInfo) error {
 	p := path.Join(parent, info.Name())
 
-	if x.fsFilesMap == nil {
-		x.fsFilesMap = make(map[string]os.FileInfo)
+	f := file{
+		info: info,
+		path: path.Join(prefix, p),
 	}
 
-	if x.fsDirsMap == nil {
-		x.fsDirsMap = make(map[string][]string)
-	}
-
-	x.fsFilesMap[p] = info
+	x.fsFilesMap[p] = f
 
 	if info.IsDir() {
-		f, err := os.Open(p)
+		f, err := os.Open(f.path)
 		fi, err := f.Readdir(-1)
 
 		if err != nil {
@@ -54,20 +56,85 @@ func (x *Generator) addPath(parent string, info os.FileInfo) error {
 		x.fsDirsMap[p] = make([]string, 0, len(fi))
 
 		for _, f := range fi {
-			if err := x.addPath(p, f); err != nil {
+			if err := x.addPath(p, prefix, f); err != nil {
 				return err
 			}
 		}
 	} else {
-		x.fsDirsMap[parent] = append(x.fsDirsMap[parent], info.Name())
+		x.appendFileInDir(parent, info.Name())
 	}
 
 	return nil
 }
 
+func (x *Generator) appendFileInDir(dir string, file string) {
+	for _, v := range x.fsDirsMap[dir] {
+		if v == file {
+			return
+		}
+	}
+
+	x.fsDirsMap[dir] = append(x.fsDirsMap[dir], file)
+}
+
+func (x *Generator) addParents(p string, prefix string) error {
+	dname, fname := path.Split(p)
+
+	if len(dname) == 0 {
+		return nil
+	}
+
+	wosep := dname[0 : len(dname)-1]
+
+	if err := x.addParents(wosep, prefix); err != nil {
+		return err
+	}
+
+	if len(wosep) == 0 {
+		wosep = "/"
+	}
+
+	x.appendFileInDir(wosep, fname)
+
+	if _, ok := x.fsFilesMap[wosep]; !ok {
+		pp := path.Join(prefix, wosep)
+		s, err := os.Stat(pp)
+
+		if err != nil {
+			return err
+		}
+
+		x.fsFilesMap[wosep] = file{
+			info: s,
+			path: pp,
+		}
+	}
+
+	return nil
+}
+
+func (x *Generator) splitRelPrefix(p string) (string, string) {
+	i := 0
+	relp := "../"
+
+	for strings.HasPrefix(p[i:], relp) {
+		i += len(relp)
+	}
+
+	return path.Join(p[0:i], "."), path.Join("/", p[i:])
+}
+
 // Add a file or directory asset to the generator. Added directories will be
 // recursed automatically.
 func (x *Generator) Add(p string) error {
+	if x.fsFilesMap == nil {
+		x.fsFilesMap = make(map[string]file)
+	}
+
+	if x.fsDirsMap == nil {
+		x.fsDirsMap = make(map[string][]string)
+	}
+
 	p = path.Clean(p)
 
 	info, err := os.Stat(p)
@@ -76,7 +143,13 @@ func (x *Generator) Add(p string) error {
 		return err
 	}
 
-	return x.addPath(path.Dir(p), info)
+	prefix, p := x.splitRelPrefix(p)
+
+	if err := x.addParents(p, prefix); err != nil {
+		return err
+	}
+
+	return x.addPath(path.Dir(p), prefix, info)
 }
 
 // Write the asset tree specified in the generator to the given writer. The
@@ -113,11 +186,11 @@ func (x *Generator) Write(wr io.Writer) error {
 		// This also reads the file and writes the contents as a const
 		// string
 		for k, v := range x.fsFilesMap {
-			if v.IsDir() {
+			if v.info.IsDir() {
 				continue
 			}
 
-			f, err := os.Open(k)
+			f, err := os.Open(v.path)
 
 			if err != nil {
 				return err
@@ -143,17 +216,16 @@ func (x *Generator) Write(wr io.Writer) error {
 		fmt.Fprintln(writer)
 	}
 
-	fmt.Fprintf(writer, "var %s assets.FileSystem\n\n", variableName)
+	fmt.Fprintf(writer, "var %s = new(assets.FileSystem)\n\n", variableName)
 
 	fmt.Fprintln(writer, "func init() {")
-	fmt.Fprintf(writer, "\t%s = assets.FileSystem{\n", variableName)
 
 	if x.fsDirsMap == nil {
 		x.fsDirsMap = make(map[string][]string)
 	}
 
 	if x.fsFilesMap == nil {
-		x.fsFilesMap = make(map[string]os.FileInfo)
+		x.fsFilesMap = make(map[string]file)
 	}
 
 	dirmap := make(map[string][]string)
@@ -178,8 +250,8 @@ func (x *Generator) Write(wr io.Writer) error {
 		dirmap[kk] = vv
 	}
 
-	fmt.Fprintf(writer, "\t\tDirs: %#v,\n", dirmap)
-	fmt.Fprintln(writer, "\t\tFiles: map[string]*assets.File{")
+	fmt.Fprintf(writer, "\t%s.Dirs = %#v\n", variableName, dirmap)
+	fmt.Fprintf(writer, "\t%s.Files = map[string]*assets.File{\n", variableName)
 
 	// Write files
 	for k, v := range x.fsFilesMap {
@@ -189,23 +261,28 @@ func (x *Generator) Write(wr io.Writer) error {
 			kk = "/"
 		}
 
-		fmt.Fprintf(writer, "\t\t\t%#v: &assets.File{\n", kk)
-		fmt.Fprintf(writer, "\t\t\t\tPath:     %#v,\n", kk)
-		fmt.Fprintf(writer, "\t\t\t\tFileMode: %#v,\n", v.Mode())
+		mt := v.info.ModTime()
 
-		mt := v.ModTime()
+		var dt string
 
-		fmt.Fprintf(writer, "\t\t\t\tMTime:    time.Unix(%#v, %#v),\n", mt.Unix(), mt.UnixNano())
-
-		if !v.IsDir() {
-			fmt.Fprintf(writer, "\t\t\t\tData:     %s,\n", vnames[k])
+		if !v.info.IsDir() {
+			dt = vnames[k]
+		} else {
+			dt = "nil"
 		}
 
-		fmt.Fprintln(writer, "\t\t\t},")
+		fmt.Fprintf(writer,
+			"\t\t%#v: %s.NewFile(%#v, %#v, time.Unix(%#v, %#v), %s),\n",
+			kk,
+			variableName,
+			kk,
+			v.info.Mode(),
+			mt.Unix(),
+			mt.UnixNano(),
+			dt)
 	}
 
-	fmt.Fprintln(writer, "\t\t},")
-	fmt.Fprintf(writer, "\t}\n")
+	fmt.Fprintln(writer, "\t}")
 	fmt.Fprintln(writer, "}")
 
 	ret, err := format.Source(writer.Bytes())

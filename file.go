@@ -16,7 +16,7 @@ type File struct {
 	FileMode os.FileMode
 
 	// The asset modification time
-	MTime time.Time
+	Mtime time.Time
 
 	// The asset data. Note that this data might be in gzip compressed form.
 	Data []byte
@@ -37,7 +37,7 @@ func (f *File) Mode() os.FileMode {
 }
 
 func (f *File) ModTime() time.Time {
-	return f.MTime
+	return f.Mtime
 }
 
 func (f *File) IsDir() bool {

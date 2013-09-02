@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"net/http"
 	"os"
+	"path"
+	"time"
 )
 
 // An in-memory asset file system. The file system implements the

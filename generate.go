@@ -2,7 +2,6 @@ package assets
 
 import (
 	"bytes"
-	"compress/gzip"
 	"crypto/sha1"
 	"fmt"
 	"go/format"
@@ -23,9 +22,6 @@ type Generator struct {
 
 	// The variable name containing the asset filesystem (defaults to Assets),
 	VariableName string
-
-	// Whether the assets will be compressed using gzip (defaults to false),
-	Compressed bool
 
 	// Strip the specified prefix from all paths,
 	StripPrefix string
@@ -129,25 +125,10 @@ func (x *Generator) Write(wr io.Writer) error {
 
 			defer f.Close()
 
-			var data []byte
+			data, err := ioutil.ReadAll(f)
 
-			if x.Compressed {
-				buf := &bytes.Buffer{}
-				gw := gzip.NewWriter(buf)
-
-				if _, err := io.Copy(gw, f); err != nil {
-					gw.Close()
-					return err
-				}
-
-				gw.Close()
-				data = buf.Bytes()
-			} else {
-				data, err = ioutil.ReadAll(f)
-
-				if err != nil {
-					return err
-				}
+			if err != nil {
+				return err
 			}
 
 			s := sha1.New()
@@ -224,7 +205,6 @@ func (x *Generator) Write(wr io.Writer) error {
 	}
 
 	fmt.Fprintln(writer, "\t\t},")
-	fmt.Fprintf(writer, "\t\tCompressed: %#v,\n", x.Compressed)
 	fmt.Fprintf(writer, "\t}\n")
 	fmt.Fprintln(writer, "}")
 

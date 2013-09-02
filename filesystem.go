@@ -30,8 +30,10 @@ func (f *FileSystem) NewFile(path string, filemode os.FileMode, mtime time.Time,
 }
 
 // Implementation of http.FileSystem
-func (f *FileSystem) Open(path string) (http.File, error) {
-	if fi, ok := f.Files[path]; ok {
+func (f *FileSystem) Open(p string) (http.File, error) {
+	p = path.Clean(p)
+
+	if fi, ok := f.Files[p]; ok {
 		if !fi.IsDir() {
 			// Make a copy for reading
 			ret := fi

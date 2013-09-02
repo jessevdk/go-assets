@@ -5,12 +5,7 @@ import (
 )
 
 func ExampleGenerator() {
-	g := Generator{
-		PackageName:  "main",
-		VariableName: "MyAssets",
-		Compressed:   true,
-		StripPrefix:  ".",
-	}
+	g := Generator{}
 
 	if err := g.AddDir("."); err != nil {
 		panic(err)

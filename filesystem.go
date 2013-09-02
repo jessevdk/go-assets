@@ -20,6 +20,17 @@ type FileSystem struct {
 	Compressed bool
 }
 
+func (f *FileSystem) NewFile(path string, filemode os.FileMode, mtime time.Time, data []byte) *File {
+	return &File{
+		Path:     path,
+		FileMode: filemode,
+		Mtime:    mtime,
+		Data:     data,
+
+		fs: f,
+	}
+}
+
 // Implementation of http.FileSystem
 func (f *FileSystem) Open(path string) (http.File, error) {
 	if fi, ok := f.Files[path]; ok {

@@ -15,9 +15,6 @@ type FileSystem struct {
 	// A map of file/directory paths to assets.File types.
 	Files map[string]*File
 
-	// Whether or not the file data in the file system is stored in gzip
-	// compressed form.
-	Compressed bool
 }
 
 func (f *FileSystem) NewFile(path string, filemode os.FileMode, mtime time.Time, data []byte) *File {

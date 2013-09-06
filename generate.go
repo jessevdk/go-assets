@@ -222,7 +222,7 @@ func (x *Generator) Write(wr io.Writer) error {
 			vname := fmt.Sprintf("__%s%x", variableName, s.Sum(nil))
 			vnames[k] = vname
 
-			fmt.Fprintf(writer, "var %s = []byte(%#v)\n", vname, string(data))
+			fmt.Fprintf(writer, "var %s = %#v\n", vname, string(data))
 		}
 
 		fmt.Fprintln(writer)
@@ -272,7 +272,7 @@ func (x *Generator) Write(wr io.Writer) error {
 		var dt string
 
 		if !v.info.IsDir() {
-			dt = vnames[k]
+			dt = "[]byte("+vnames[k]+")"
 		} else {
 			dt = "nil"
 		}

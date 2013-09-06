@@ -272,7 +272,7 @@ func (x *Generator) Write(wr io.Writer) error {
 		var dt string
 
 		if !v.info.IsDir() {
-			dt = "[]byte("+vnames[k]+")"
+			dt = "[]byte(" + vnames[k] + ")"
 		} else {
 			dt = "nil"
 		}

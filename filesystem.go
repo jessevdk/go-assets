@@ -16,6 +16,9 @@ type FileSystem struct {
 
 	// A map of file/directory paths to assets.File types.
 	Files map[string]*File
+
+	// Override loading assets from local path. Useful for development.
+	LocalPath string
 }
 
 func (f *FileSystem) NewFile(path string, filemode os.FileMode, mtime time.Time, data []byte) *File {
@@ -32,6 +35,10 @@ func (f *FileSystem) NewFile(path string, filemode os.FileMode, mtime time.Time,
 // Implementation of http.FileSystem
 func (f *FileSystem) Open(p string) (http.File, error) {
 	p = path.Clean(p)
+
+	if len(f.LocalPath) != 0 {
+		return http.Dir(f.LocalPath).Open(p)
+	}
 
 	if fi, ok := f.Files[p]; ok {
 		if !fi.IsDir() {

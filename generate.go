@@ -228,9 +228,7 @@ func (x *Generator) Write(wr io.Writer) error {
 		fmt.Fprintln(writer)
 	}
 
-	fmt.Fprintf(writer, "var %s = new(assets.FileSystem)\n\n", variableName)
-
-	fmt.Fprintln(writer, "func init() {")
+	fmt.Fprintf(writer, "var %s = assets.NewFileSystem(", variableName)
 
 	if x.fsDirsMap == nil {
 		x.fsDirsMap = make(map[string][]string)
@@ -252,8 +250,8 @@ func (x *Generator) Write(wr io.Writer) error {
 		}
 	}
 
-	fmt.Fprintf(writer, "\t%s.Dirs = %#v\n", variableName, dirmap)
-	fmt.Fprintf(writer, "\t%s.Files = map[string]*assets.File{\n", variableName)
+	fmt.Fprintf(writer, "%#v, ", dirmap)
+	fmt.Fprintf(writer, "map[string]*assets.File{\n")
 
 	// Write files
 	for k, v := range x.fsFilesMap {
@@ -277,19 +275,15 @@ func (x *Generator) Write(wr io.Writer) error {
 			dt = "nil"
 		}
 
-		fmt.Fprintf(writer,
-			"\t\t%#v: %s.NewFile(%#v, %#v, time.Unix(%#v, %#v), %s),\n",
-			kk,
-			variableName,
-			kk,
-			v.info.Mode(),
-			mt.Unix(),
-			mt.UnixNano(),
-			dt)
+		fmt.Fprintf(writer, "\t\t%#v: &assets.File{\n", kk)
+		fmt.Fprintf(writer, "\t\t\tPath: %#v,\n", kk)
+		fmt.Fprintf(writer, "\t\t\tFileMode: %#v,\n", v.info.Mode())
+		fmt.Fprintf(writer, "\t\t\tMtime: time.Unix(%#v, %#v),\n", mt.Unix(), mt.UnixNano())
+		fmt.Fprintf(writer, "\t\t\tData: %s,\n", dt)
+		fmt.Fprintf(writer, "\t\t},")
 	}
 
-	fmt.Fprintln(writer, "\t}")
-	fmt.Fprintln(writer, "}")
+	fmt.Fprintln(writer, "\t}, \"\")")
 
 	ret, err := format.Source(writer.Bytes())
 

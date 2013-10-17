@@ -21,6 +21,20 @@ type FileSystem struct {
 	LocalPath string
 }
 
+func NewFileSystem(dirs map[string][]string, files map[string]*File, localPath string) *FileSystem {
+	fs := &FileSystem{
+		Dirs: dirs,
+		Files: files,
+		LocalPath: localPath,
+	}
+
+	for _, f := range fs.Files {
+		f.fs = fs
+	}
+
+	return fs
+}
+
 func (f *FileSystem) NewFile(path string, filemode os.FileMode, mtime time.Time, data []byte) *File {
 	return &File{
 		Path:     path,

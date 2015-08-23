@@ -48,7 +48,7 @@ func (x *Generator) addPath(parent string, prefix string, info os.FileInfo) erro
 	if info.IsDir() {
 		f, err := os.Open(f.path)
 		fi, err := f.Readdir(-1)
-
+		f.Close()
 		if err != nil {
 			return err
 		}
@@ -208,9 +208,9 @@ func (x *Generator) Write(wr io.Writer) error {
 				return err
 			}
 
-			defer f.Close()
-
 			data, err := ioutil.ReadAll(f)
+
+			f.Close()
 
 			if err != nil {
 				return err

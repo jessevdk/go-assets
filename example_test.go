@@ -7,7 +7,7 @@ import (
 func ExampleGenerator() {
 	g := Generator{}
 
-	if err := g.AddDir("."); err != nil {
+	if err := g.Add("."); err != nil {
 		panic(err)
 	}
 

@@ -185,8 +185,9 @@ func (x *Generator) Write(wr io.Writer) error {
 	// Write package and import
 	fmt.Fprintf(writer, "package %s\n\n", p)
 	fmt.Fprintln(writer, "import (")
-	fmt.Fprintln(writer, "\t\"github.com/jessevdk/go-assets\"")
 	fmt.Fprintln(writer, "\t\"time\"")
+	fmt.Fprintln(writer)
+	fmt.Fprintln(writer, "\t\"github.com/jessevdk/go-assets\"")
 	fmt.Fprintln(writer, ")")
 	fmt.Fprintln(writer)
 

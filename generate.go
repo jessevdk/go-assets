@@ -220,7 +220,7 @@ func (x *Generator) Write(wr io.Writer) error {
 			s := sha1.New()
 			io.WriteString(s, k)
 
-			vname := fmt.Sprintf("__%s%x", variableName, s.Sum(nil))
+			vname := fmt.Sprintf("_%s%x", variableName, s.Sum(nil))
 			vnames[k] = vname
 
 			fmt.Fprintf(writer, "var %s = %#v\n", vname, string(data))
@@ -229,6 +229,7 @@ func (x *Generator) Write(wr io.Writer) error {
 		fmt.Fprintln(writer)
 	}
 
+	fmt.Fprintf(writer, "// %s returns go-assets FileSystem\n", variableName)
 	fmt.Fprintf(writer, "var %s = assets.NewFileSystem(", variableName)
 
 	if x.fsDirsMap == nil {

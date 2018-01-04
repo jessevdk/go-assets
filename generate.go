@@ -31,6 +31,9 @@ type Generator struct {
 	// Strip the specified prefix from all paths,
 	StripPrefix string
 
+	// Tags for build constraints
+	Tags string
+
 	fsDirsMap  map[string][]string
 	fsFilesMap map[string]file
 }
@@ -181,6 +184,10 @@ func (x *Generator) Write(wr io.Writer) error {
 	}
 
 	writer := &bytes.Buffer{}
+
+	if x.Tags != "" {
+		fmt.Fprintf(writer, "// +build %s\n\n", x.Tags)
+	}
 
 	// Write package and import
 	fmt.Fprintf(writer, "package %s\n\n", p)

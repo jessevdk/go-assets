@@ -23,8 +23,8 @@ type FileSystem struct {
 
 func NewFileSystem(dirs map[string][]string, files map[string]*File, localPath string) *FileSystem {
 	fs := &FileSystem{
-		Dirs: dirs,
-		Files: files,
+		Dirs:      dirs,
+		Files:     files,
 		LocalPath: localPath,
 	}
 

@@ -19,6 +19,8 @@ type FileSystem struct {
 
 	// Override loading assets from local path. Useful for development.
 	LocalPath string
+	// Prefix would be prepended to http requests
+	Prefix string
 }
 
 func NewFileSystem(dirs map[string][]string, files map[string]*File, localPath string) *FileSystem {
@@ -50,6 +52,9 @@ func (f *FileSystem) NewFile(path string, filemode os.FileMode, mtime time.Time,
 func (f *FileSystem) Open(p string) (http.File, error) {
 	p = path.Clean(p)
 
+	if len(f.Prefix) !=0 {
+		p = path.Join(f.Prefix, p)
+	}
 	if len(f.LocalPath) != 0 {
 		return http.Dir(f.LocalPath).Open(p)
 	}

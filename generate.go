@@ -277,7 +277,7 @@ func (x *Generator) Write(wr io.Writer) error {
 			dt = "nil"
 		}
 
-		fmt.Fprintf(writer, "\t\t%#v: &assets.File{\n", kk)
+		fmt.Fprintf(writer, "\t\t%#v: {\n", kk)
 		fmt.Fprintf(writer, "\t\t\tPath: %#v,\n", kk)
 		fmt.Fprintf(writer, "\t\t\tFileMode: %#v,\n", v.info.Mode())
 		fmt.Fprintf(writer, "\t\t\tMtime: time.Unix(%#v, %#v),\n", mt.Unix(), mt.UnixNano())

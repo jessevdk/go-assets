@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"sort"
 	"strings"
 )
 
@@ -198,7 +199,14 @@ func (x *Generator) Write(wr io.Writer) error {
 		// Create mapping from full file path to asset variable name.
 		// This also reads the file and writes the contents as a const
 		// string
-		for k, v := range x.fsFilesMap {
+		var keys []string
+		for k := range x.fsFilesMap {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			v := x.fsFilesMap[k]
 			if v.info.IsDir() {
 				continue
 			}
